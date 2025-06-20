@@ -74,16 +74,38 @@ class TransaksiController extends Controller
     {
         $request->validate([
             'tanggal' => 'required|date',
-            'tipe_transaksi' => 'required|in:masuk,keluar'
+            'tipe_transaksi' => 'required|in:masuk,keluar',
+            'qty' => 'required|integer|min:1'
         ]);
 
         $transaksi = Transaksi::findOrFail($id);
+        $barang = $transaksi->barang;
+
+        if ($transaksi->tipe_transaksi == 'masuk') {
+            $barang->stok -= $transaksi->qty;
+        } else {
+            $barang->stok += $transaksi->qty;
+        }
+
+        if ($request->tipe_transaksi == 'masuk') {
+            $barang->stok += $request->qty;
+        } else {
+            if ($barang->stok < $request->qty) {
+                return response()->json(['message' => 'Stok tidak mencukupi'], 422);
+            }
+            $barang->stok -= $request->qty;
+        }
+
+        $barang->save();
+
         $transaksi->tanggal = $request->tanggal;
         $transaksi->tipe_transaksi = $request->tipe_transaksi;
+        $transaksi->qty = $request->qty;
         $transaksi->save();
 
-        return response()->json(['message' => 'Transaksi diupdate']);
+        return response()->json(['message' => 'Transaksi berhasil diperbarui']);
     }
+
 
     public function destroy($id)
     {
@@ -94,13 +116,9 @@ class TransaksiController extends Controller
             $qty_before = $barang->stok;
 
             if ($transaksi->tipe_transaksi == 'masuk') {
-                $barang->stok -= 1;
-            } elseif ($transaksi->tipe_transaksi == 'keluar') {
-                $barang->stok += 1;
-            }
-
-            if ($barang->stok < 0) {
-                throw new \Exception("Stok tidak mencukupi untuk menghapus transaksi.");
+                $barang->stok -= $transaksi->qty;
+            } else {
+                $barang->stok += $transaksi->qty;
             }
 
             $barang->save();
@@ -117,8 +135,4 @@ class TransaksiController extends Controller
 
         return response()->json(['message' => 'Transaksi dihapus, stok diperbaiki, dan log dicatat']);
     }
-
-
-
-
 }
