@@ -480,7 +480,7 @@ $(document).ready(function() {
             },
             data: JSON.stringify({
                 tanggal: $('#editTanggal').val(),
-                tipe_transaksi: $('#editTipe').val()
+                tipe_transaksi: $('#editTipe').val(),
                 qty: $('#editQty').val()
             }),
             success: function() {
