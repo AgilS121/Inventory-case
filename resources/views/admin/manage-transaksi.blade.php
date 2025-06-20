@@ -247,6 +247,13 @@
                     </div>
                 </div>
                 <div class="form-group">
+                    <label for="editQty">Jumlah</label>
+                    <div class="input-wrapper">
+                        <input type="number" class="form-control" id="editQty" min="1" required>
+                        <i class="fas fa-sort-numeric-up"></i>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label for="editTipe">Tipe Transaksi</label>
                     <div class="input-wrapper">
                         <select id="editTipe" class="form-control" required>
@@ -451,6 +458,7 @@ $(document).ready(function() {
                 $('#editId').val(trx.id);
                 $('#editTanggal').val(trx.tanggal);
                 $('#editTipe').val(trx.tipe_transaksi);
+                $('#editQty').val(trx.qty);
                 openEditModal();
             },
             error: function(xhr) {
@@ -473,6 +481,7 @@ $(document).ready(function() {
             data: JSON.stringify({
                 tanggal: $('#editTanggal').val(),
                 tipe_transaksi: $('#editTipe').val()
+                qty: $('#editQty').val()
             }),
             success: function() {
                 closeEditModal();
