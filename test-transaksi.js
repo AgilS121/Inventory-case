@@ -7,7 +7,7 @@ export let options = {
 };
 
 const BASE_URL = 'http://localhost:8000';
-const TOKEN = '24|7BbO9cnurbJRWr8vPPxJP9k3ZZZX92SkueYWrWnS96a774a4';
+const TOKEN = '27|TjW5PXv3t26nwPyq37A0494uGiQvlYxeGVUgXB5led3d4c8f';
 const BARANG_ID = 3;
 
 export function setup() {

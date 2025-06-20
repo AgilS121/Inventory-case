@@ -278,7 +278,7 @@ $(document).ready(function() {
                 $('#name').val(user.name);
                 $('#username').val(user.username);
                 $('#password').val('');
-                new bootstrap.Modal(document.getElementById('userModal')).show();
+                openUserModal();
             }
         });
     });

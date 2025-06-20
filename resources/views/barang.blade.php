@@ -159,6 +159,8 @@
         </div>
         <form id="barangForm">
             <div class="modal-body">
+                <input type="hidden" id="barangId">
+
                 <div class="form-group">
                     <label for="nama">Nama</label>
                     <div class="input-wrapper">
@@ -281,7 +283,7 @@ $(document).ready(function() {
                 $('#kode').val(barang.kode);
                 $('#stok').val(barang.stok);
                 $('#lokasi_rak').val(barang.lokasi_rak);
-                barangModal.show();
+                openModal();
             }
         });
     });
@@ -301,22 +303,31 @@ $(document).ready(function() {
 
     $('#barangForm').submit(function(e) {
         e.preventDefault();
-        const id = $('#barangId').val();
-        const method = id ? 'PUT' : 'POST';
-        const url = id ? `/api/barangs/${id}` : '/api/barangs';
+
+        const id = $('#barangId').val().trim();
+        const isEdit = id !== '';
+        const method = isEdit ? 'PUT' : 'POST';
+        const url = isEdit ? `/api/barangs/${id}` : '/api/barangs';
+
+        const formData = {
+            nama: $('#nama').val(),
+            kode: $('#kode').val(),
+            stok: $('#stok').val(),
+            lokasi_rak: $('#lokasi_rak').val()
+        };
+
         $.ajax({
             url: url,
             method: method,
             headers: { Authorization: 'Bearer ' + token },
-            data: {
-                nama: $('#nama').val(),
-                kode: $('#kode').val(),
-                stok: $('#stok').val(),
-                lokasi_rak: $('#lokasi_rak').val()
-            },
+            data: formData,
             success: function() {
                 closeModal();
                 loadBarang();
+            },
+            error: function(xhr) {
+                alert('Gagal menyimpan data!');
+                console.error(xhr.responseText);
             }
         });
     });
