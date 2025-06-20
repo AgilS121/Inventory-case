@@ -19,9 +19,10 @@ class TransaksiController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'id_barang' => 'required|exists:barang,id',
+            'id_barang' => 'required|exists:barangs,id',
             'tanggal' => 'required|date',
             'tipe_transaksi' => 'required|in:masuk,keluar',
+            'qty' => 'nullable|integer|min:1'
         ]);
 
         DB::transaction(function() use ($request) {
@@ -32,13 +33,14 @@ class TransaksiController extends Controller
             $qty_before = $barang->stok;
 
             if ($request->tipe_transaksi == 'masuk') {
-                $barang->stok += 1;
+                $barang->stok += $request->qty;
             } elseif ($request->tipe_transaksi == 'keluar') {
-                if ($barang->stok <= 0) {
+                if ($barang->stok < $request->qty) {
                     throw new \Exception("Stok barang tidak mencukupi.");
                 }
-                $barang->stok -= 1;
+                $barang->stok -= $request->qty;
             }
+
 
             $barang->save();
 
@@ -46,6 +48,7 @@ class TransaksiController extends Controller
                 'id_barang' => $request->id_barang,
                 'tanggal' => $request->tanggal,
                 'tipe_transaksi' => $request->tipe_transaksi,
+                'qty' => $request->qty ?? 1,
                 'id_user' => $request->user()->id,
             ]);
 
