@@ -200,7 +200,6 @@
     </div>
     
     <div class="pagination-nav" id="paginationNav">
-        <!-- Pagination buttons akan di-generate di sini -->
     </div>
 </div>
 
@@ -220,11 +219,9 @@
 
 <div class="pagination-controls">
     <div class="pagination-info" id="paginationInfo">
-        <!-- Info pagination akan ditampilkan di sini -->
     </div>
     
     <div class="pagination-nav" id="paginationNavBottom">
-        <!-- Pagination buttons akan di-generate di sini -->
     </div>
 </div>
 
