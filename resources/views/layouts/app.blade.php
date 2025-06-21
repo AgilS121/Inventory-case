@@ -391,7 +391,7 @@
                 </a>
             </div>
 
-            <div class="nav-item admin-only" style="display: none;">
+            <div class="nav-item" >
                 <a href="{{ route('admin.transaksi.manage') }}" class="nav-link" data-page="manage">
                     <i class="fas fa-gear"></i>
                     Manage Transaksi

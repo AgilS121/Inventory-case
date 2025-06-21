@@ -25,6 +25,7 @@
     align-items: center;
 }
 
+
 .modal-content.large {
     max-width: 700px;
 }
@@ -113,95 +114,8 @@
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
-
-/* Pagination Styles */
-.pagination-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 20px 0;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.pagination-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 0.9rem;
-    color: #6b7280;
-}
-
-.pagination-info select {
-    padding: 5px 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-.pagination-nav {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.pagination-nav button {
-    padding: 8px 12px;
-    border: 1px solid #d1d5db;
-    background: white;
-    color: #374151;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    min-width: 40px;
-}
-
-.pagination-nav button:hover:not(:disabled) {
-    background: #f3f4f6;
-}
-
-.pagination-nav button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.pagination-nav button.active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
-}
-
-.data-summary {
-    background: #f8fafc;
-    padding: 10px 15px;
-    border-radius: 6px;
-    margin-bottom: 20px;
-    font-size: 0.9rem;
-    color: #475569;
-}
 </style>
-
 <h2 class="text-danger">Manajemen Transaksi (Danger Zone)</h2>
-
-<div class="data-summary" id="dataSummary">
-    Memuat data...
-</div>
-
-<div class="pagination-controls">
-    <div class="pagination-info">
-        <span>Tampilkan</span>
-        <select id="perPageSelect">
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-        </select>
-        <span>data per halaman</span>
-    </div>
-    
-    <div class="pagination-nav" id="paginationNav">
-    </div>
-</div>
 
 <table class="table table-bordered">
     <thead>
@@ -210,20 +124,13 @@
             <th>Barang</th>
             <th>Tanggal</th>
             <th>Tipe</th>
+            <th>Jumlah</th>
             <th>User</th>
             <th>Aksi</th>
         </tr>
     </thead>
     <tbody id="transaksiTable"></tbody>
 </table>
-
-<div class="pagination-controls">
-    <div class="pagination-info" id="paginationInfo">
-    </div>
-    
-    <div class="pagination-nav" id="paginationNavBottom">
-    </div>
-</div>
 
 <div id="editModal" class="modal">
     <div class="modal-content">
@@ -283,152 +190,42 @@
 const token = localStorage.getItem('token');
 if (!token) window.location.href = '/login';
 
-let currentPage = 1;
-let perPage = 10;
-let totalData = 0;
-let totalPages = 0;
-
-function loadTransaksi(page = 1, limit = perPage) {
-    currentPage = page;
-    perPage = limit;
-    
-    $('#transaksiTable').html('<tr><td colspan="6" class="text-center">Memuat data...</td></tr>');
-    
+function loadTransaksi() {
     $.ajax({
         url: '/api/transaksi',
         method: 'GET',
         headers: { Authorization: 'Bearer ' + token },
-        data: {
-            page: page,
-            per_page: limit
-        },
-        success: function(response) {
-            if (Array.isArray(response)) {
-                handleArrayResponse(response, page, limit);
-            } 
-            else if (response.data) {
-                handlePaginatedResponse(response);
-            }
-            else {
-                handleArrayResponse(response, page, limit);
-            }
-        },
-        error: function(xhr) {
-            $('#transaksiTable').html('<tr><td colspan="6" class="text-center text-danger">Gagal memuat data</td></tr>');
-            console.error('Error loading data:', xhr);
+        success: function(data) {
+            const userId =localStorage.getItem('userId');
+            const userRole = localStorage.getItem('role');
+            $('#transaksiTable').empty();
+            data.forEach(trx => {
+                let isEditable = (trx.user.id == userId || userRole == 'admin');
+                let row = `<tr>
+                    <td>${trx.id}</td>
+                    <td>${trx.barang.nama} (${trx.barang.kode})</td>
+                    <td>${trx.tanggal}</td>
+                    <td>${trx.tipe_transaksi}</td>
+                    <td>${trx.qty}</td>
+                    <td>${trx.user.name}</td>
+                    <td>`;
+
+                if (isEditable) {
+                    row += `
+                        <button class="btn btn-warning btnEdit" data-id="${trx.id}">Edit</button>
+                        <button class="btn btn-danger btnDelete" data-id="${trx.id}">Hapus</button>
+                    `;
+                } else {
+                    row += `<span class="text-muted">No Access</span>`;
+                }
+
+                row += `</td></tr>`;
+
+                $('#transaksiTable').append(row);
+            });
+
         }
     });
-}
-
-function handleArrayResponse(data, page, limit) {
-    totalData = data.length;
-    totalPages = Math.ceil(totalData / limit);
-    
-    const startIndex = (page - 1) * limit;
-    const endIndex = Math.min(startIndex + limit, totalData);
-    const paginatedData = data.slice(startIndex, endIndex);
-    
-    renderTable(paginatedData);
-    updatePaginationInfo(startIndex + 1, endIndex, totalData);
-    renderPagination();
-}
-
-function handlePaginatedResponse(response) {
-    totalData = response.total || response.data.length;
-    totalPages = response.last_page || Math.ceil(totalData / perPage);
-    currentPage = response.current_page || currentPage;
-    
-    renderTable(response.data);
-    
-    const from = response.from || ((currentPage - 1) * perPage) + 1;
-    const to = response.to || Math.min(currentPage * perPage, totalData);
-    
-    updatePaginationInfo(from, to, totalData);
-    renderPagination();
-}
-
-function renderTable(data) {
-    $('#transaksiTable').empty();
-    
-    if (data.length === 0) {
-        $('#transaksiTable').html('<tr><td colspan="6" class="text-center">Tidak ada data</td></tr>');
-        return;
-    }
-    
-    data.forEach(trx => {
-        let row = `<tr>
-            <td>${trx.id}</td>
-            <td>${trx.barang ? trx.barang.nama + ' (' + trx.barang.kode + ')' : 'N/A'}</td>
-            <td>${trx.tanggal}</td>
-            <td>${trx.tipe_transaksi}</td>
-            <td>${trx.user ? trx.user.name : 'N/A'}</td>
-            <td>
-                <button class="btn btn-warning btn-sm btnEdit" data-id="${trx.id}">Edit</button>
-                <button class="btn btn-danger btn-sm btnDelete" data-id="${trx.id}">Hapus</button>
-            </td>
-        </tr>`;
-        $('#transaksiTable').append(row);
-    });
-}
-
-function updatePaginationInfo(from, to, total) {
-    const infoText = `Menampilkan ${from}-${to} dari ${total} data`;
-    $('#paginationInfo').text(infoText);
-    $('#dataSummary').text(`Total ${total} transaksi ditemukan`);
-}
-
-function renderPagination() {
-    const nav = generatePaginationHTML();
-    $('#paginationNav').html(nav);
-    $('#paginationNavBottom').html(nav);
-}
-
-function generatePaginationHTML() {
-    if (totalPages <= 1) return '';
-    
-    let html = '';
-    
-    html += `<button onclick="changePage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i>
-    </button>`;
-    
-    const startPage = Math.max(1, currentPage - 2);
-    const endPage = Math.min(totalPages, currentPage + 2);
-    
-    if (startPage > 1) {
-        html += `<button onclick="changePage(1)">1</button>`;
-        if (startPage > 2) {
-            html += `<span style="padding: 8px;">...</span>`;
-        }
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-        html += `<button onclick="changePage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
-    }
-    
-    if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-            html += `<span style="padding: 8px;">...</span>`;
-        }
-        html += `<button onclick="changePage(${totalPages})">${totalPages}</button>`;
-    }
-    
-    html += `<button onclick="changePage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
-        <i class="fas fa-chevron-right"></i>
-    </button>`;
-    
-    return html;
-}
-
-function changePage(page) {
-    if (page < 1 || page > totalPages || page === currentPage) return;
-    loadTransaksi(page, perPage);
-}
-
-function changePerPage(newPerPage) {
-    perPage = parseInt(newPerPage);
-    currentPage = 1;
-    loadTransaksi(currentPage, perPage);
 }
 
 function openEditModal() {
@@ -442,12 +239,9 @@ function closeEditModal() {
 }
 
 $(document).ready(function() {
+
     loadTransaksi();
-    
-    $('#perPageSelect').change(function() {
-        changePerPage($(this).val());
-    });
-    
+
     $(document).on('click', '.btnEdit', function() {
         const id = $(this).data('id');
         $.ajax({
@@ -460,10 +254,6 @@ $(document).ready(function() {
                 $('#editTipe').val(trx.tipe_transaksi);
                 $('#editQty').val(trx.qty);
                 openEditModal();
-            },
-            error: function(xhr) {
-                alert('Gagal memuat data transaksi!');
-                console.error(xhr.responseText);
             }
         });
     });
@@ -474,19 +264,15 @@ $(document).ready(function() {
         $.ajax({
             url: `/api/transaksi/${id}`,
             method: 'PUT',
-            headers: { 
-                Authorization: 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            },
-            data: JSON.stringify({
+            headers: { Authorization: 'Bearer ' + token },
+            data: {
                 tanggal: $('#editTanggal').val(),
                 tipe_transaksi: $('#editTipe').val(),
                 qty: $('#editQty').val()
-            }),
+            },
             success: function() {
                 closeEditModal();
-                loadTransaksi(currentPage, perPage);
-                alert('Transaksi berhasil diupdate!');
+                loadTransaksi();
             },
             error: function(xhr) {
                 alert('Gagal update transaksi!');
@@ -495,6 +281,7 @@ $(document).ready(function() {
         });
     });
 
+
     $(document).on('click', '.btnDelete', function() {
         const id = $(this).data('id');
         if(confirm('Yakin ingin menghapus transaksi ini?')) {
@@ -502,18 +289,7 @@ $(document).ready(function() {
                 url: `/api/transaksi/${id}`,
                 method: 'DELETE',
                 headers: { Authorization: 'Bearer ' + token },
-                success: function() {
-                    const remainingData = totalData - 1;
-                    const maxPageAfterDelete = Math.ceil(remainingData / perPage);
-                    const newPage = currentPage > maxPageAfterDelete ? Math.max(1, maxPageAfterDelete) : currentPage;
-                    
-                    loadTransaksi(newPage, perPage);
-                    alert('Transaksi berhasil dihapus!');
-                },
-                error: function(xhr) {
-                    alert('Gagal menghapus transaksi!');
-                    console.error(xhr.responseText);
-                }
+                success: loadTransaksi
             });
         }
     });

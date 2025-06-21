@@ -79,6 +79,11 @@ class TransaksiController extends Controller
         ]);
 
         $transaksi = Transaksi::findOrFail($id);
+
+        if (auth()->user()->role == 'operator' && $transaksi->id_user != auth()->id()) {
+            return response()->json(['message' => 'Tidak diizinkan mengedit transaksi ini'], 403);
+        }
+
         $barang = $transaksi->barang;
 
         if ($transaksi->tipe_transaksi == 'masuk') {
@@ -103,36 +108,29 @@ class TransaksiController extends Controller
         $transaksi->qty = $request->qty;
         $transaksi->save();
 
-        return response()->json(['message' => 'Transaksi berhasil diperbarui']);
+        return response()->json(['message' => 'Berhasil diupdate']);
     }
-
 
     public function destroy($id)
     {
-        DB::transaction(function() use ($id) {
-            $transaksi = Transaksi::findOrFail($id);
-            $barang = $transaksi->barang()->lockForUpdate()->first();
+        $transaksi = Transaksi::findOrFail($id);
 
-            $qty_before = $barang->stok;
+        if (auth()->user()->role == 'operator' && $transaksi->id_user != auth()->id()) {
+            return response()->json(['message' => 'Tidak diizinkan menghapus transaksi ini'], 403);
+        }
 
-            if ($transaksi->tipe_transaksi == 'masuk') {
-                $barang->stok -= $transaksi->qty;
-            } else {
-                $barang->stok += $transaksi->qty;
-            }
+        $barang = $transaksi->barang;
 
-            $barang->save();
+        if ($transaksi->tipe_transaksi == 'masuk') {
+            $barang->stok -= $transaksi->qty;
+        } else {
+            $barang->stok += $transaksi->qty;
+        }
 
-            $transaksi->delete();
+        $barang->save();
+        $transaksi->delete();
 
-            StokLog::create([
-                'id_barang' => $barang->id,
-                'qty_before' => $qty_before,
-                'qty_after' => $barang->stok,
-                'id_user' => auth()->user()->id
-            ]);
-        });
-
-        return response()->json(['message' => 'Transaksi dihapus, stok diperbaiki, dan log dicatat']);
+        return response()->json(['message' => 'Berhasil dihapus']);
     }
+
 }

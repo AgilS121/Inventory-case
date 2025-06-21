@@ -335,6 +335,7 @@
                 success: function(response) {
                     localStorage.setItem('token', response.token);
                     localStorage.setItem('role', response.user.role);
+                    localStorage.setItem('userId', response.user.id);
                     const role = response.user.role;
                     if (role === 'admin') {
                         window.location.href = '/dashboard';
